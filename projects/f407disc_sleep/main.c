@@ -112,6 +112,8 @@ void osShutdown() {
 }
 
 void stopMode() {
+#ifndef SIMULATOR
+
 	// configure for STOP mode on WFI
 	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 	PWR->CR &= ~PWR_CR_PDDS;
@@ -124,6 +126,8 @@ void stopMode() {
 	// stm32_clock_init() switches it to the HSE clock, but it is normally
 	// called only from crt0, by way of __early_init.
 	stm32_clock_init();
+
+#endif /* SIMULATOR */
 
 	extStop(&EXTD1);
 }
