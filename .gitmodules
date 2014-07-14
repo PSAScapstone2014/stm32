@@ -1,3 +1,3 @@
 [submodule "ChibiOS"]
 	path = ChibiOS
-	url = https://github.com/psas/ChibiOS-RT.git
+	url = git@github.com:PSAScapstone2014/ChibiOS-RT.git
