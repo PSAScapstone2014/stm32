@@ -13,6 +13,9 @@
 #include "utils_general.h"
 #include "utils_led.h"
 #include "net_addrs.h"
+#ifdef FLIGHT
+#include "iwdg.h"
+#endif
 
 #include "ADIS16405.h"
 #include "MPL3115A2.h"
@@ -24,6 +27,7 @@ static const struct swap adis_swaps[] = {
     SWAP_FIELD(ADIS16405Data, supply_out),
     SWAP_FIELD(ADIS16405Data, xgyro_out),
     SWAP_FIELD(ADIS16405Data, ygyro_out),
+    SWAP_FIELD(ADIS16405Data, zgyro_out),
     SWAP_FIELD(ADIS16405Data, xaccl_out),
     SWAP_FIELD(ADIS16405Data, yaccl_out),
     SWAP_FIELD(ADIS16405Data, zaccl_out),
@@ -60,7 +64,9 @@ static void mpl_drdy_handler(eventid_t id UNUSED){
 void main(void){
     halInit();
     chSysInit();
-
+#ifdef FLIGHT
+    iwdgStart();
+#endif
     ledStart(NULL);
 
     struct RCICommand commands[] = {

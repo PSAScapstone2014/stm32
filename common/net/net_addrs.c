@@ -56,7 +56,7 @@
  */
 
 /* RNet Common */
-#define NETMASK IPv4(255, 0, 0, 0)
+#define NETMASK IPv4(255, 255, 255, 0)
 #define GATEWAY IPv4(10,  10, 10, 1)
 
 /* Flight Computer */
@@ -126,7 +126,7 @@ const struct sockaddr * RTXMAN_DIAG_ADDR = make_addr(RTXMAN_IP, RTXMAN_DIAG);
 
 
 /* GPS frontend */
-#define GPS_IP IPv4(10, 10, 10, 50)
+#define GPS_IP IPv4(10, 10, 10, 40)
 #define GPS_MAC (uint8_t[6]){0xE6, 0x10, 0x20, 0x30, 0x40, 0xff}
 #define GPS_OUT 35050
 #define GPS_COTS 35051

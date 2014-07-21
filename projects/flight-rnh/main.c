@@ -14,10 +14,11 @@
 #include "utils_hal.h"
 #include "BQ24725.h"
 #include "BQ3060.h"
-
 #include "KS8999.h"
 #include "RNHPort.h"
-
+#ifdef FLIGHT
+#include "iwdg.h"
+#endif
 static struct SeqSocket battery_socket = DECL_SEQ_SOCKET(13*2);
 static struct SeqSocket port_socket = DECL_SEQ_SOCKET(8*2);
 static struct SeqSocket alarm_socket = DECL_SEQ_SOCKET(2*3);
@@ -29,7 +30,7 @@ static const struct led * LED_ACOK = &BLUE;
 
 /* Pin features */
 static int umbilical(void){
-    return !palReadPad(GPIOE, GPIO_E12_NC);
+    return !palReadPad(GPIOC, GPIO_C13_UMB_DETECT);
 }
 static int rrdyStatus(void){
     return !palReadPad(GPIOD, GPIO_D2_N_ROCKET_READY);
@@ -272,15 +273,14 @@ void main(void) {
     chSysInit();
     // Start Diagnostics
     ledStart(&led_cfg);
-
+#ifdef FLIGHT
+    iwdgStart();
+#endif
     //Init hardware
     BQ24725Start(&BQConf);
     BQ3060Start(&rnh3060conf);
     KS8999Start();
     rnhPortStart();
-    evtInit(&umbdebounce, MS2ST(25));
-    struct pin umbdetpin = {GPIOE, GPIO_E12_NC};
-    extAddCallback(&umbdetpin, EXT_CH_MODE_BOTH_EDGES, umbdet_interrupt);
     // Start charging if possible
     if(BQ24725_ACOK()){
         ledOn(LED_ACOK);
@@ -313,7 +313,10 @@ void main(void) {
     connect(port_socket.socket, FC_ADDR, sizeof(struct sockaddr));
     connect(alarm_socket.socket, FC_ADDR, sizeof(struct sockaddr));
     connect(umbdet_socket.socket, FC_ADDR, sizeof(struct sockaddr));
-
+    evtInit(&umbdebounce, MS2ST(25));
+    struct pin umbdetpin = {GPIOC, GPIO_C13_UMB_DETECT};
+    extAddCallback(&umbdetpin, EXT_CH_MODE_BOTH_EDGES | EXT_CH_MODE_AUTOSTART, umbdet_interrupt);
+    extUtilsStart();
     // Set up event system
     struct EventListener batt0, batt1, port0, batt_fault, umbdet, umbdeb;
     chEvtRegister(&ACOK, &batt0, 0);

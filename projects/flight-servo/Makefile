@@ -88,6 +88,7 @@ CSRC = $(PORTSRC) \
        $(LWSRC) \
        $(CHIBIOS)/os/various/evtimer.c \
        $(PSAS_NETSRC) \
+       $(PSAS_DEVICES)/iwdg.c \
        $(PSAS_UTIL)/utils_led.c \
        $(PSAS_UTIL)/utils_rci.c \
        main.c
@@ -193,7 +194,7 @@ DLIBS =
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = -DGIT_COMMIT_VERSION=$(PSAS_VERSION)
+UDEFS = $(BUILDFLAG) -DGIT_COMMIT_VERSION=$(PSAS_VERSION)
 
 
 # Define ASM defines here
