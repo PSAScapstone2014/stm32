@@ -74,7 +74,7 @@ CHIBIOS = ../../ChibiOS
 
 ifneq "$(SIMULATOR)" ""
  include $(CHIBIOS)/os/hal/platforms/Posix/platform.mk
- include $(CHIBIOS)/os/ports/GCC/Posix/port.mk
+ include $(CHIBIOS)/os/ports/GCC/SIMSTM32/port.mk
 else
  include $(CHIBIOS)/boards/ST_STM32F4_DISCOVERY/board.mk
  include $(CHIBIOS)/os/hal/platforms/STM32F4xx/platform.mk
@@ -229,15 +229,14 @@ else
 endif
 
 ifeq ($(USE_FWLIB),yes)
-  include $(CHIBIOS)/ext/stm32lib/stm32lib.mk
-  CSRC += $(STM32SRC)
-  INCDIR += $(STM32INC)
+  include $(CHIBIOS)/ext/ia32lib/ia32lib.mk
+  CSRC += $(IA32SRC)
+  INCDIR += $(IA32INC)
   USE_OPT += -DUSE_STDPERIPH_DRIVER
 endif
 
-
 ifneq "$(SIMULATOR)" ""
- include $(CHIBIOS)/os/ports/GCC/Posix/rules.mk
+ include $(CHIBIOS)/os/ports/GCC/SIMSTM32/rules.mk
 else
  include $(CHIBIOS)/os/ports/GCC/ARMCMx/rules.mk
 endif
