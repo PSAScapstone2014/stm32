@@ -3,12 +3,6 @@
 
 #ifdef SIMULATOR
 # include "simio.h"
-# define _cmdargs int argc, char **argv
-#else
-# define _cmdargs void
-# define sim_getopt(argc, argv)
-# define sim_sdStart()
-# define sim_stStop()
 #endif /* SIMULATOR */
 
 void					main(_cmdargs);
@@ -98,13 +92,9 @@ void irqButton(EXTDriver* extp, expchannel_t channel) {
 	buttonFlag = true;
 }
 
-void main(_cmdargs) {
+void main() {
 	while (1) {
 		osInit();
-
-		sim_getopt(argc, argv);
-
-		sim_sdStart();
 
 		driverInit();
 
@@ -147,5 +137,4 @@ void stopMode() {
 #endif /* SIMULATOR */
 
 	extStop(&EXTD1);
-	sim_sdStop();
 }
