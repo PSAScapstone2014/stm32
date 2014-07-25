@@ -1,4 +1,5 @@
 #include <string.h>
+#include <errno.h>
 
 #include "lwip/ip_addr.h"
 #include "lwip/sockets.h"

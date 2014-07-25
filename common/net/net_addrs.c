@@ -3,10 +3,19 @@
 #include "lwip/sockets.h"
 #include "lwip/ip_addr.h"
 
+#ifdef SIMULATOR
+# include <netinet/ip.h>
+#endif
+
 /*
  * HELPER TYPES AND MACROS
  * ====================== *****************************************************
  */
+
+/*  Work around missing __builtin_bswap16 in GCC < 4.8 */
+#if __GNUC__ < 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ < 8))
+# define __builtin_bswap16(n) ((uint16_t)(((n)<<8)|((n)>>8)))
+#endif
 
 /* htons() in macro form because lwip doesn't declare it as a macro (ugh) */
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__

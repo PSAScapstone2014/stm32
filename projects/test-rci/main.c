@@ -1,6 +1,5 @@
 #include "ch.h"
 #include "hal.h"
-
 #include "net_addrs.h"
 #include "utils_general.h"
 #include "utils_sockets.h"
@@ -18,8 +17,8 @@ void main(void) {
     lwipThreadStart(RNH_LWIP);
 
     struct RCICommand cmds[] = {
-	    {"#LEDS", led, NULL},
-	    {NULL}
+	    {"#LEDS",  led, NULL },
+	    {   NULL, NULL, NULL }
     };
 
     RCICreate(cmds);

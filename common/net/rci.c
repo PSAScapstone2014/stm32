@@ -29,12 +29,12 @@ static void handle_command(
 static int get_command(int s, char * buffer, int buflen){
     int cmdlen = 0;
     int i = 0;
-    struct fd_set read;
-    FD_ZERO(&read);
-    FD_SET(s, &read);
+    fd_set readset;
+    FD_ZERO(&readset);
+    FD_SET(s, &readset);
     do {
         struct timeval timeout = {5, 0};
-        if(select(s+1, &read, NULL, NULL, &timeout) <= 0){
+        if(select(s+1, &readset, NULL, NULL, &timeout) <= 0){
             return -1;
         }
         int len = read(s, buffer, buflen-cmdlen);
@@ -78,12 +78,12 @@ static msg_t rci_thread(void *p){
     char rx_buf[ETH_MTU];
     char tx_buf[ETH_MTU];
 
-    int socket = socket(AF_INET, SOCK_STREAM, 0);
-    chDbgAssert(socket >= 0, "Could not get RCI socket", NULL);
-    if(bind(socket, &own, sizeof(struct sockaddr_in)) < 0){
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    chDbgAssert(sock >= 0, "Could not get RCI socket", NULL);
+    if(bind(sock, &own, sizeof(struct sockaddr_in)) < 0){
         chDbgPanic("Could not bind RCI socket");
     }
-    if(listen(socket, 1) < 0){
+    if(listen(sock, 1) < 0){
         chDbgPanic("Could not listen on RCI socket");
     }
 
@@ -99,7 +99,7 @@ static msg_t rci_thread(void *p){
         };
 
         fromlen = sizeof(from);
-        int s = accept(socket, &from, &fromlen);
+        int s = accept(sock, &from, &fromlen);
         if(s < 0){
             continue;
         }

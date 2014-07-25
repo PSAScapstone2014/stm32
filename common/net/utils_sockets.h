@@ -11,6 +11,11 @@
 #include "lwip/sockets.h"
 #include "lwip/ip_addr.h"
 
+#ifdef SIMULATOR
+# include <unistd.h>
+# include <arpa/inet.h>
+#endif
+
 /* Ethernet MTU in bytes - useful for creating UDP rx and tx buffers*/
 #define ETH_MTU 1500
 

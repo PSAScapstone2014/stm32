@@ -5,8 +5,8 @@
 
 #TODO: -ffreestanding. ChibiOS doesn't use it but it probably should?
 #      main() should be void either way (and shouldn't return either) so
-#      if we don't go with -ffreestanding we need -Wno-main to stop the 
-#      compiler from complaining (-ffreestanding implies -Wno-main) 
+#      if we don't go with -ffreestanding we need -Wno-main to stop the
+#      compiler from complaining (-ffreestanding implies -Wno-main)
 # Compiler options here.
 ifeq ($(USE_OPT),)
   USE_OPT = -O2 -ggdb -std=gnu99 -fomit-frame-pointer -falign-functions=16 -Wno-main
@@ -14,7 +14,7 @@ endif
 
 # C specific options here (added to USE_OPT).
 ifeq ($(USE_COPT),)
-  USE_COPT = 
+  USE_COPT =
 endif
 
 # C++ specific options here (added to USE_OPT).
@@ -71,17 +71,20 @@ PROJECT = ch
 PSAS= ../../common
 include $(PSAS)/psas.mk
 CHIBIOS = ../../ChibiOS
-include $(CHIBIOS)/boards/OLIMEX_STM32_E407/board.mk
-include $(CHIBIOS)/os/hal/platforms/STM32F4xx/platform.mk
+ifneq "$(SIMULATOR)" ""
+ include $(CHIBIOS)/os/hal/platforms/Posix/platform.mk
+ include $(CHIBIOS)/os/ports/GCC/SIMSTM32/port.mk
+else
+ include $(CHIBIOS)/boards/OLIMEX_STM32_E407/board.mk
+ include $(CHIBIOS)/os/hal/platforms/STM32F4xx/platform.mk
+ include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F4xx/port.mk
+ # Define linker script file here
+ LDSCRIPT= $(PORTLD)/STM32F407xG.ld
+ #LDSCRIPT= $(PORTLD)/STM32F407xG_CCM.ld
+endif
 include $(CHIBIOS)/os/hal/hal.mk
-include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F4xx/port.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
 include $(CHIBIOS)/os/various/lwip_bindings/lwip.mk
-
-
-# Define linker script file here
-LDSCRIPT= $(PORTLD)/STM32F407xG.ld
-#LDSCRIPT= $(PORTLD)/STM32F407xG_CCM.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -137,10 +140,12 @@ INCDIR = $(PORTINC) $(KERNINC) \
 # Compiler settings
 #
 
-MCU  = cortex-m4
+ifeq "$(SIMULATOR)" ""
+ MCU  = cortex-m4
+ #TRGT = arm-elf-
+ TRGT = arm-none-eabi-
+endif
 
-#TRGT = arm-elf-
-TRGT = arm-none-eabi-
 CC   = $(TRGT)gcc
 CPPC = $(TRGT)g++
 # Enable loading with g++ only if you need C++ runtime support.
@@ -158,7 +163,9 @@ BIN  = $(CP) -O binary
 AOPT =
 
 # THUMB-specific options here
-TOPT = -mthumb -DTHUMB
+ifeq ($(USE_THUMB),)
+ TOPT = -mthumb -DTHUMB
+endif
 
 # Define C warning options here
 CWARN = -Wall -Wextra -Wstrict-prototypes
@@ -230,6 +237,10 @@ ifeq ($(USE_FWLIB),yes)
   USE_OPT += -DUSE_STDPERIPH_DRIVER
 endif
 
-include $(CHIBIOS)/os/ports/GCC/ARMCMx/rules.mk
-include $(PSAS_RULES)
+ifneq "$(SIMULATOR)" ""
+ include $(CHIBIOS)/os/ports/GCC/SIMSTM32/rules.mk
+else
+ include $(CHIBIOS)/os/ports/GCC/ARMCMx/rules.mk
+endif
 
+include $(PSAS_RULES)
