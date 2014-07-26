@@ -20,6 +20,9 @@ void set_lwipthread_opts(struct lwipthread_opts * ip_opts,
     ip_opts->gateway = inet_addr(gateway);
 }
 
+#ifdef SIMULATOR
+void lwipThreadStart(struct lwipthread_opts * ip_opts){(void)ip_opts;}
+#else
 void lwipThreadStart(struct lwipthread_opts * ip_opts){
     chThdCreateStatic(wa_lwip_thread,
                       sizeof(wa_lwip_thread),
@@ -27,6 +30,7 @@ void lwipThreadStart(struct lwipthread_opts * ip_opts){
                       lwip_thread,
                       ip_opts);
 }
+#endif
 
 void set_sockaddr(struct sockaddr * addr, const char * ip, uint16_t port){
     //Create an address (remember to have the data in network byte order)

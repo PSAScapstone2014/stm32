@@ -71,9 +71,12 @@ PROJECT = ch
 PSAS= ../../common
 include $(PSAS)/psas.mk
 CHIBIOS = ../../ChibiOS
+include $(CHIBIOS)/os/various/lwip_bindings/lwip.mk
+
 ifneq "$(SIMULATOR)" ""
  include $(CHIBIOS)/os/hal/platforms/Posix/platform.mk
  include $(CHIBIOS)/os/ports/GCC/SIMSTM32/port.mk
+ LWBINDSRC=$(CHIBIOS)/os/various/lwip_bindings/arch/sys_arch.c
 else
  include $(CHIBIOS)/boards/OLIMEX_STM32_E407/board.mk
  include $(CHIBIOS)/os/hal/platforms/STM32F4xx/platform.mk
@@ -84,7 +87,6 @@ else
 endif
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
-include $(CHIBIOS)/os/various/lwip_bindings/lwip.mk
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
