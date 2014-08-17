@@ -11,6 +11,11 @@
 #include "iwdg.h"
 #endif
 
+#ifdef SIMULATOR
+# define SDX SD1
+#else
+# define SDX SD6
+#endif
 
 #define COTS_BUFFER_SIZE 1400
 static struct SeqSocket cots_socket = DECL_SEQ_SOCKET(COTS_BUFFER_SIZE);
@@ -30,7 +35,7 @@ void main(void) {
 	};
 	RCICreate(commands);
 
-	sdStart(&SD6, NULL);
+	sdStart(&SDX, NULL);
 
 	int s = get_udp_socket(GPS_COTS_ADDR);
 	chDbgAssert(s >= 0, "COTS socket failed", NULL);
@@ -38,7 +43,7 @@ void main(void) {
 	connect(cots_socket.socket, FC_ADDR, sizeof(struct sockaddr));
 
 	while(TRUE){
-		int len = sdReadTimeout(&SD6, cots_socket.buffer, COTS_BUFFER_SIZE, S2ST(1));
+		int len = sdReadTimeout(&SDX, cots_socket.buffer, COTS_BUFFER_SIZE, S2ST(1));
 		seq_write(&cots_socket, len);
 		ledToggle(&RED);
 	}

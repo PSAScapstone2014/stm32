@@ -66,15 +66,27 @@
 
 /* RNet Common */
 #define NETMASK IPv4(255, 255, 255, 0)
-#define GATEWAY IPv4(10,  10, 10, 1)
+#ifdef SIMULATOR
+# define GATEWAY IPv4(127, 0, 0, 1)
+#else
+# define GATEWAY IPv4(10,  10, 10, 1)
+#endif
 
 /* Flight Computer */
-#define FC_IP IPv4(10, 10, 10, 10)
+#ifdef SIMULATOR
+# define FC_IP IPv4(127, 0, 0, 10)
+#else
+# define FC_IP IPv4(10, 10, 10, 10)
+#endif
 #define FC_LISTEN_PORT 36000 // FC device listener
 const struct sockaddr * FC_ADDR = make_addr(FC_IP, FC_LISTEN_PORT);
 
 /* Sensor Node */
-#define SENSOR_IP IPv4(10, 10, 10, 20)
+#ifdef SIMULATOR
+# define SENSOR_IP IPv4(127, 0, 0, 20)
+#else
+# define SENSOR_IP IPv4(10, 10, 10, 20)
+#endif
 #define SENSOR_MAC (uint8_t[6]){0xE6, 0x10, 0x20, 0x30, 0x40, 0x11}
 #define ADIS_PORT 35020 // ADIS16405
 #define MPU_PORT 35002  // MPU1950
@@ -86,7 +98,11 @@ const struct sockaddr *MPU_ADDR = make_addr(SENSOR_IP, MPU_PORT);
 const struct sockaddr *MPL_ADDR = make_addr(SENSOR_IP, MPL_PORT);
 
 /* Roll Control */
-#define ROLL_IP IPv4(10, 10, 10, 30)
+#ifdef SIMULATOR
+# define ROLL_IP IPv4(127, 0, 0, 30)
+#else
+# define ROLL_IP IPv4(10, 10, 10, 30)
+#endif
 #define ROLL_MAC (uint8_t[6]){0xE6, 0x10, 0x20, 0x30, 0x40, 0xbb}
 #define ROLL_PORT 35003    // Servo control
 
@@ -94,7 +110,11 @@ struct lwipthread_opts * ROLL_LWIP = make_lwipopts(ROLL_MAC, ROLL_IP, NETMASK, G
 const struct sockaddr * ROLL_ADDR = make_addr(ROLL_IP, ROLL_PORT);
 
 /* Rocket Net Hub */
-#define RNH_IP IPv4(10, 10, 10, 5)
+#ifdef SIMULATOR
+# define RNH_IP IPv4(127, 0, 0, 5)
+#else
+# define RNH_IP IPv4(10, 10, 10, 5)
+#endif
 #define RNH_MAC (uint8_t[6]){0xE6, 0x10, 0x20, 0x30, 0x40, 0xaa}
 #define RNH_BATTERY 36101 // Battery data
 #define RNH_PORT 36102    // Port data
@@ -108,7 +128,11 @@ const struct sockaddr * RNH_ALARM_ADDR = make_addr(RNH_IP, RNH_ALARM);
 const struct sockaddr * RNH_UMBDET_ADDR = make_addr(RNH_IP, RNH_UMBDET);
 
 /* Rocket Tracks Controller */
-#define RTX_IP IPv4(10, 0, 0, 40)
+#ifdef SIMULATOR
+# define RTX_IP IPv4(127, 0, 0, 40)
+#else
+# define RTX_IP IPv4(10, 0, 0, 40)
+#endif
 #define RTX_MAC (uint8_t[6]){0xE6, 0x10, 0x20, 0x30, 0x40, 0xdd}
 #define RTX_MANUAL 36200  // Manual Control listener
 #define RTX_NEUTRAL 36201 // Axis Neutral data
@@ -122,7 +146,11 @@ const struct sockaddr * RTX_FROMSLA_ADDR = make_addr(RTX_IP, RTX_FROMSLA);
 const struct sockaddr * RTX_DIAG_ADDR = make_addr(RTX_IP, RTX_DIAG);
 
 /* Rocket Tracks Manual Control Box */
-#define RTXMAN_IP IPv4(10, 0, 0, 45)
+#ifdef SIMULATOR
+# define RTXMAN_IP IPv4(127, 0, 0, 45)
+#else
+# define RTXMAN_IP IPv4(10, 0, 0, 45)
+#endif
 #define RTXMAN_MAC (uint8_t[6]){0xE6, 0x10, 0x20, 0x30, 0x40, 0xee}
 #define RTXMAN_OUT 36203     // Manual Control data
 #define RTXMAN_NEUTRAL 36204 // Axis Neutral listener
@@ -135,7 +163,11 @@ const struct sockaddr * RTXMAN_DIAG_ADDR = make_addr(RTXMAN_IP, RTXMAN_DIAG);
 
 
 /* GPS frontend */
-#define GPS_IP IPv4(10, 10, 10, 40)
+#ifdef SIMULATOR
+# define GPS_IP IPv4(127, 0, 0, 40)
+#else
+# define GPS_IP IPv4(10, 10, 10, 40)
+#endif
 #define GPS_MAC (uint8_t[6]){0xE6, 0x10, 0x20, 0x30, 0x40, 0xff}
 #define GPS_OUT 35050
 #define GPS_COTS 35051

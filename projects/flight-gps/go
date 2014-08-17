@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+from SocketServer import StreamRequestHandler, DatagramRequestHandler, TCPServer, UDPServer
+import subprocess
+import encodings
+import threading
+import socket
+import time
+import sys
+
+def sim_format(lld, data):
+  return '%s\t%s\n' % (lld , encodings.codecs.encode(data, 'hex'))
+
+def sim_decode(line):
+  # split the line based on the simio protocol
+  source, code = line.strip().split('\t', 1)
+
+  # decode simio data
+  data = code.decode('hex')
+  return source, data
+
+class SIMIO(StreamRequestHandler):
+  def handle(self):
+    print '[SIMIO] CONNECT'
+
+    # spawn thread to write dummy serial data
+    t = threading.Thread(target=self.sd1_writer)
+    t.setDaemon(True)
+    t.start()
+
+    # read and print any incoming data
+    for line in self.rfile:
+      source, data = sim_decode(line)
+      sys.stdout.write('[%s] RECV %s' % (source, data))
+
+  def sd1_writer(self):
+    while True:
+      # write something to SD1 forever
+      self.wfile.write(sim_format('SD1_IO', 'foo'))
+      time.sleep(1)
+
+class COTS(DatagramRequestHandler):
+  def handle(self):
+    # read and print any incoming data
+    print '[COTS] %r' % self.rfile.read()
+
+# prevent bind errors on relaunch
+TCPServer.allow_reuse_address = True
+
+# listen for simio connections
+simio = TCPServer(('localhost', 27000), SIMIO)
+simio_thread = threading.Thread(target=simio.handle_request)
+simio_thread.setDaemon(True)
+simio_thread.start()
+
+# listen for flight-computer cots connections
+cots = UDPServer(('127.0.0.10', 36000), COTS)
+cots_thread = threading.Thread(target=cots.serve_forever)
+cots_thread.setDaemon(True)
+cots_thread.start()
+
+# spawn the unit test
+ch = subprocess.Popen(['sudo', './build/ch.elf'])
+
+# wait for chibios ports to listen
+time.sleep(1)
+
+# get version from RCI
+rci_sock = socket.socket()
+rci_sock.connect(('127.0.0.1', 23))
+rci_sock.sendall('#VERS\r\n')
+sys.stdout.write('[RCI] RECV %s' % rci_sock.recv(64))
+
+# wait for chibios (forever)
+ch.wait()

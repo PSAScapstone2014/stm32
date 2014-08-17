@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Og -ggdb -std=gnu99 -fomit-frame-pointer -falign-functions=16 -Wno-main
+  USE_OPT = -ggdb -std=gnu99 -fomit-frame-pointer -falign-functions=16 -Wno-main
 endif
 
 # C specific options here (added to USE_OPT).
@@ -67,16 +67,22 @@ PROJECT = ch
 PSAS= ../../common
 include $(PSAS)/psas.mk
 CHIBIOS = ../../ChibiOS
-include $(PSAS)/boards/GPS_RF_FRONTEND_2/board.mk
-include $(CHIBIOS)/os/hal/platforms/STM32F4xx/platform.mk
-include $(CHIBIOS)/os/hal/hal.mk
-include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F4xx/port.mk
-include $(CHIBIOS)/os/kernel/kernel.mk
 include $(CHIBIOS)/os/various/lwip_bindings/lwip.mk
+include $(PSAS)/boards/GPS_RF_FRONTEND_2/board.mk
 
-# Define linker script file here
-LDSCRIPT= $(PORTLD)/STM32F407xG.ld
-#LDSCRIPT= $(PORTLD)/STM32F407xG_CCM.ld
+ifneq "$(SIMULATOR)" ""
+ include $(CHIBIOS)/os/hal/platforms/Posix/platform.mk
+ include $(CHIBIOS)/os/ports/GCC/SIMSTM32/port.mk
+ LWBINDSRC=$(CHIBIOS)/os/various/lwip_bindings/arch/sys_arch.c
+else
+ include $(CHIBIOS)/os/hal/platforms/STM32F4xx/platform.mk
+ include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F4xx/port.mk
+ # Define linker script file here
+ LDSCRIPT= $(PORTLD)/STM32F407xG.ld
+ #LDSCRIPT= $(PORTLD)/STM32F407xG_CCM.ld
+endif
+include $(CHIBIOS)/os/hal/hal.mk
+include $(CHIBIOS)/os/kernel/kernel.mk
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -85,13 +91,16 @@ CSRC = $(PORTSRC) \
        $(HALSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
-       $(LWSRC) \
        $(CHIBIOS)/os/various/evtimer.c \
-       $(PSAS_DEVICES)/iwdg.c \
        $(PSAS_UTIL)/utils_led.c \
        $(PSAS_UTIL)/utils_rci.c \
+       $(LWSRC) \
        $(PSAS_NETSRC) \
        main.c
+
+ifneq ($(FLIGHT),)
+CSRC+= $(PSAS_DEVICES)/iwdg.c
+endif
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -132,10 +141,12 @@ INCDIR = $(PORTINC) $(KERNINC) \
 # Compiler settings
 #
 
-MCU  = cortex-m4
+ifeq "$(SIMULATOR)" ""
+ MCU  = cortex-m4
+ #TRGT = arm-elf-
+ TRGT = arm-none-eabi-
+endif
 
-#TRGT = arm-elf-
-TRGT = arm-none-eabi-
 CC   = $(TRGT)gcc
 CPPC = $(TRGT)g++
 # Enable loading with g++ only if you need C++ runtime support.
@@ -153,7 +164,9 @@ BIN  = $(CP) -O binary
 AOPT =
 
 # THUMB-specific options here
-TOPT = -mthumb -DTHUMB
+ifeq ($(USE_THUMB),)
+ TOPT = -mthumb -DTHUMB
+endif
 
 # Define C warning options here
 CWARN = -Wall -Wextra -Wstrict-prototypes
@@ -170,7 +183,7 @@ CPPWARN = -Wall -Wextra
 #
 
 # List all default C defines here, like -D_DEBUG=1
-DDEFS =
+DDEFS = -DBOARD_GPS_RF_FRONTEND_2
 
 # List all default ASM defines here, like -D_DEBUG=1
 DADEFS =
@@ -194,7 +207,6 @@ DLIBS =
 
 # List all user C define here, like -D_DEBUG=1
 UDEFS = $(BUILDFLAG) -DGIT_COMMIT_VERSION=$(PSAS_VERSION)
-
 
 # Define ASM defines here
 UADEFS =
@@ -226,6 +238,10 @@ ifeq ($(USE_FWLIB),yes)
   USE_OPT += -DUSE_STDPERIPH_DRIVER
 endif
 
-include $(CHIBIOS)/os/ports/GCC/ARMCMx/rules.mk
-include $(PSAS_RULES)
+ifneq "$(SIMULATOR)" ""
+ include $(CHIBIOS)/os/ports/GCC/SIMSTM32/rules.mk
+else
+ include $(CHIBIOS)/os/ports/GCC/ARMCMx/rules.mk
+endif
 
+include $(PSAS_RULES)

@@ -4,6 +4,10 @@
 #include "utils_general.h"
 #include "utils_sockets.h"
 #include "rci.h"
+#include "sim_preempt.h"
+#ifdef SIMULATOR
+#include <stdio.h>
+#endif
 
 static void handle_command(
         struct RCICmdData * data,
@@ -40,6 +44,8 @@ static int get_command(int s, char * buffer, int buflen){
         int len = read(s, buffer, buflen-cmdlen);
         if(len < 0){
             return -1;
+        } else if (len == 0){
+            return i;
         }
         cmdlen += len;
         for(; i + 1 < cmdlen; ++i){
@@ -80,7 +86,13 @@ static msg_t rci_thread(void *p){
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     chDbgAssert(sock >= 0, "Could not get RCI socket", NULL);
+
+    int optval = 1;
+    socklen_t optlen = sizeof(optval);
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, optlen);
+
     if(bind(sock, &own, sizeof(struct sockaddr_in)) < 0){
+        perror("bind");
         chDbgPanic("Could not bind RCI socket");
     }
     if(listen(sock, 1) < 0){
@@ -99,7 +111,7 @@ static msg_t rci_thread(void *p){
         };
 
         fromlen = sizeof(from);
-        int s = accept(sock, &from, &fromlen);
+        int s = ACCEPT(sock, &from, &fromlen);
         if(s < 0){
             continue;
         }
