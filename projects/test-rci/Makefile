@@ -87,7 +87,7 @@ else
  include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F4xx/port.mk
  # Define linker script file here
  LDSCRIPT= $(PORTLD)/STM32F407xG.ld
- #LDSCRIPT= $(PORTLD)/STM32F407xG_CCM.ld
+ # LDSCRIPT= $(PORTLD)/STM32F407xG_CCM.ld
 endif
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
@@ -248,12 +248,6 @@ ifeq ($(USE_FWLIB),yes)
   CSRC += $(STM32SRC)
   INCDIR += $(STM32INC)
   USE_OPT += -DUSE_STDPERIPH_DRIVER
-endif
-
-ifneq "$(SIMULATOR)" ""
- include $(CHIBIOS)/os/ports/GCC/SIMSTM32/rules.mk
-else
- include $(CHIBIOS)/os/ports/GCC/ARMCMx/rules.mk
 endif
 
 ifneq "$(SIMULATOR)" ""

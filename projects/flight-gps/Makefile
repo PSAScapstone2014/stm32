@@ -72,7 +72,6 @@ PSAS= ../../common
 include $(PSAS)/psas.mk
 CHIBIOS = ../../ChibiOS
 include $(CHIBIOS)/os/various/lwip_bindings/lwip.mk
-include $(PSAS)/boards/GPS_RF_FRONTEND_2/board.mk
 
 ifneq "$(SIMULATOR)" ""
  include $(CHIBIOS)/os/hal/platforms/Posix/platform.mk
@@ -83,7 +82,7 @@ else
  include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F4xx/port.mk
  # Define linker script file here
  LDSCRIPT= $(PORTLD)/STM32F407xG.ld
- #LDSCRIPT= $(PORTLD)/STM32F407xG_CCM.ld
+ # LDSCRIPT= $(PORTLD)/STM32F407xG_CCM.ld
 endif
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
@@ -194,7 +193,7 @@ CPPWARN = -Wall -Wextra
 #
 
 # List all default C defines here, like -D_DEBUG=1
-DDEFS = -DBOARD_GPS_RF_FRONTEND_2
+DDEFS = -DBOARD_PSAS_GPS_RF_FRONTEND_2
 
 # List all default ASM defines here, like -D_DEBUG=1
 DADEFS =
@@ -247,12 +246,6 @@ ifeq ($(USE_FWLIB),yes)
   CSRC += $(STM32SRC)
   INCDIR += $(STM32INC)
   USE_OPT += -DUSE_STDPERIPH_DRIVER
-endif
-
-ifneq "$(SIMULATOR)" ""
- include $(CHIBIOS)/os/ports/GCC/SIMSTM32/rules.mk
-else
- include $(CHIBIOS)/os/ports/GCC/ARMCMx/rules.mk
 endif
 
 ifneq "$(SIMULATOR)" ""
