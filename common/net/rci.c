@@ -10,143 +10,143 @@
 #endif
 
 static void handle_command(
-        struct RCICmdData * data,
-        struct RCIRetData * ret,
-        struct RCICommand * cmd)
+		struct RCICmdData * data,
+		struct RCIRetData * ret,
+		struct RCICommand * cmd)
 {
-    for(;cmd->name != NULL; ++cmd){
-        if(cmd->function == NULL)
-            break;
-        int rclen = strlen(cmd->name);
-        if(!strncmp(data->data, cmd->name, MIN(data->len, rclen))){
-            //remove rci command from data and place it in name
-            data->name = cmd->name;
-            data->len -= rclen;
-            data->data += rclen;
-            //call the callback
-            cmd->function(data, ret, cmd->user);
-            break;
-        }
-    }
+	for(;cmd->name != NULL; ++cmd){
+		if(cmd->function == NULL)
+			break;
+		int rclen = strlen(cmd->name);
+		if(!strncmp(data->data, cmd->name, MIN(data->len, rclen))){
+			//remove rci command from data and place it in name
+			data->name = cmd->name;
+			data->len -= rclen;
+			data->data += rclen;
+			//call the callback
+			cmd->function(data, ret, cmd->user);
+			break;
+		}
+	}
 }
 
 static int get_command(int s, char * buffer, int buflen){
-    int cmdlen = 0;
-    int i = 0;
-    fd_set readset;
-    FD_ZERO(&readset);
-    FD_SET(s, &readset);
-    do {
-        struct timeval timeout = {5, 0};
-        if(select(s+1, &readset, NULL, NULL, &timeout) <= 0){
-            return -1;
-        }
-        int len = read(s, buffer, buflen-cmdlen);
-        if(len < 0){
-            return -1;
-        } else if (len == 0){
-            return i;
-        }
-        cmdlen += len;
-        for(; i + 1 < cmdlen; ++i){
-            if(buffer[i] == '\r' && buffer[i + 1] == '\n'){
-                /* remove trailing \r\n */
-                return i;
-            }
-        }
-    } while(cmdlen < buflen);
-    return -1;
+	int cmdlen = 0;
+	int i = 0;
+	fd_set readset;
+	FD_ZERO(&readset);
+	FD_SET(s, &readset);
+	do {
+		struct timeval timeout = {5, 0};
+		if(select(s+1, &readset, NULL, NULL, &timeout) <= 0){
+			return -1;
+		}
+		int len = read(s, buffer, buflen-cmdlen);
+		if(len < 0){
+			return -1;
+		} else if (len == 0){
+			return i;
+		}
+		cmdlen += len;
+		for(; i + 1 < cmdlen; ++i){
+			if(buffer[i] == '\r' && buffer[i + 1] == '\n'){
+				/* remove trailing \r\n */
+				return i;
+			}
+		}
+	} while(cmdlen < buflen);
+	return -1;
 }
 
 static void send_response( int s, char * buffer, int len, int maxlen){
-    // FIXME: check return of write, and continue to attempt to write if needed
-    len = MIN(len, maxlen-2);
-    if(len > 0){
-        buffer[len] = '\r';
-        buffer[len + 1] = '\n';
-        if(write(s, buffer, MIN(len + 2, maxlen)) < 0){
-            return;
-        }
-    }
+	// FIXME: check return of write, and continue to attempt to write if needed
+	len = MIN(len, maxlen-2);
+	if(len > 0){
+		buffer[len] = '\r';
+		buffer[len + 1] = '\n';
+		if(write(s, buffer, MIN(len + 2, maxlen)) < 0){
+			return;
+		}
+	}
 }
 
 WORKING_AREA(wa_rci, THD_WA_SIZE(2048 + ETH_MTU*2));
 static msg_t rci_thread(void *p){
-    chRegSetThreadName("RCI");
+	chRegSetThreadName("RCI");
 
-    struct RCICommand * commands = (struct RCICommand *)p;
-    struct sockaddr from;
-    socklen_t fromlen;
+	struct RCICommand * commands = (struct RCICommand *)p;
+	struct sockaddr from;
+	socklen_t fromlen;
 
-    struct sockaddr own;
-    set_sockaddr(&own, "0.0.0.0", 23);
+	struct sockaddr own;
+	set_sockaddr(&own, "0.0.0.0", 23);
 
-    char rx_buf[ETH_MTU];
-    char tx_buf[ETH_MTU];
+	char rx_buf[ETH_MTU];
+	char tx_buf[ETH_MTU];
 
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    chDbgAssert(sock >= 0, "Could not get RCI socket", NULL);
+	int sock = socket(AF_INET, SOCK_STREAM, 0);
+	chDbgAssert(sock >= 0, "Could not get RCI socket", NULL);
 
-    int optval = 1;
-    socklen_t optlen = sizeof(optval);
-    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, optlen);
+	int optval = 1;
+	socklen_t optlen = sizeof(optval);
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, optlen);
 
-    if(bind(sock, &own, sizeof(struct sockaddr_in)) < 0){
-        perror("bind");
-        chDbgPanic("Could not bind RCI socket");
-    }
-    if(listen(sock, 1) < 0){
-        chDbgPanic("Could not listen on RCI socket");
-    }
+	if(bind(sock, &own, sizeof(struct sockaddr_in)) < 0){
+		perror("bind");
+		chDbgPanic("Could not bind RCI socket");
+	}
+	if(listen(sock, 1) < 0){
+		chDbgPanic("Could not listen on RCI socket");
+	}
 
-    while(TRUE) {
-        struct RCICmdData cmd = {
-            .name = NULL,
-            .data = rx_buf,
-            .len = 0,
-        };
-        struct RCIRetData ret = {
-            .data = tx_buf,
-            .len = 0,
-        };
+	while(TRUE) {
+		struct RCICmdData cmd = {
+			.name = NULL,
+			.data = rx_buf,
+			.len = 0,
+		};
+		struct RCIRetData ret = {
+			.data = tx_buf,
+			.len = 0,
+		};
 
-        fromlen = sizeof(from);
-        int s = ACCEPT(sock, &from, &fromlen);
-        if(s < 0){
-            continue;
-        }
+		fromlen = sizeof(from);
+		int s = ACCEPT(sock, &from, &fromlen);
+		if(s < 0){
+			continue;
+		}
 
-        cmd.len = get_command(s, rx_buf, sizeof(rx_buf));
-        if(cmd.len < 0){
-            close(s);
-            continue;
-        }
+		cmd.len = get_command(s, rx_buf, sizeof(rx_buf));
+		if(cmd.len < 0){
+			close(s);
+			continue;
+		}
 
-        handle_command(&cmd, &ret, commands);
+		handle_command(&cmd, &ret, commands);
 
-        //if there's data to return, return it to the address it came from
-        send_response(s, ret.data, ret.len, sizeof(tx_buf));
-        close(s);
-    }
-    return -1;
+		//if there's data to return, return it to the address it came from
+		send_response(s, ret.data, ret.len, sizeof(tx_buf));
+		close(s);
+	}
+	return -1;
 }
 
 void RCICreate(struct RCICommand * cmd){
-    chDbgAssert(cmd, "RCICreate needs a config", NULL);
+	chDbgAssert(cmd, "RCICreate needs a config", NULL);
 
 #if 0 //FIXME: because of threads this doesn't actually work all the time.
-      //       What's a better way of finding lwip has started.
-    /* Check if LWIP has been started */
-    Thread * thd = chRegFirstThread();
-    while(thd){
-        if(!strcmp("lwipthread", thd->p_name)){
-            break;
-        }
-        thd = chRegNextThread(thd);
-    }
-    chDbgAssert(thd, "RCICreate needs lwip started beforehand", NULL);
+	  //       What's a better way of finding lwip has started.
+	/* Check if LWIP has been started */
+	Thread * thd = chRegFirstThread();
+	while(thd){
+		if(!strcmp("lwipthread", thd->p_name)){
+			break;
+		}
+		thd = chRegNextThread(thd);
+	}
+	chDbgAssert(thd, "RCICreate needs lwip started beforehand", NULL);
 #endif
-    chThdCreateStatic(wa_rci, sizeof(wa_rci), NORMALPRIO, rci_thread, (void *)cmd);
+	chThdCreateStatic(wa_rci, sizeof(wa_rci), NORMALPRIO, rci_thread, (void *)cmd);
 }
 
 

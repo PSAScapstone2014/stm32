@@ -27,6 +27,16 @@ ifeq ($(USE_LINK_GC),)
   USE_LINK_GC = yes
 endif
 
+# Linker extra options here.
+ifeq ($(USE_LDOPT),)
+  USE_LDOPT =
+endif
+
+# Enable this if you want link time optimizations (LTO)
+ifeq ($(USE_LTO),)
+  USE_LTO = no
+endif
+
 # If enabled, this option allows to compile the application in THUMB mode.
 ifeq ($(USE_THUMB),)
   USE_THUMB = yes
@@ -45,15 +55,9 @@ endif
 # Architecture or project specific options
 #
 
-# Enables the use of FPU on Cortex-M4.
-# Enable this if you really want to use the STM FWLib.
+# Enables the use of FPU on Cortex-M4 (no, softfp, hard).
 ifeq ($(USE_FPU),)
   USE_FPU = no
-endif
-
-# Enable this if you really want to use the STM FWLib.
-ifeq ($(USE_FWLIB),)
-  USE_FWLIB = no
 endif
 
 #
@@ -131,8 +135,8 @@ ASMSRC = $(PORTASM)
 INCDIR = $(PORTINC) $(KERNINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) \
          $(CHIBIOS)/os/various \
-	 $(LWINC) \
-	 $(PSAS_NET) $(PSAS_UTIL)/include
+         $(LWINC) \
+         $(PSAS_NET) $(PSAS_UTIL)/include
 
 #
 # Project, sources and paths
@@ -158,6 +162,7 @@ LD   = $(TRGT)gcc
 CP   = $(TRGT)objcopy
 AS   = $(TRGT)gcc -x assembler-with-cpp
 OD   = $(TRGT)objdump
+SZ   = $(TRGT)size
 HEX  = $(CP) -O ihex
 BIN  = $(CP) -O binary
 
@@ -170,7 +175,13 @@ ifeq ($(USE_THUMB),)
 endif
 
 # Define C warning options here
-CWARN = -Wall -Wextra -Wstrict-prototypes
+CWARN = -Wall -Wextra -Wstrict-prototypes -Wdisabled-optimization \
+	-Wdouble-promotion -Wformat=2 -Wfloat-equal \
+	-Wunsafe-loop-optimizations -Waggregate-return -Wlogical-op \
+	-Wmissing-include-dirs -Wpointer-arith -Wredundant-decls
+ifeq "$(SIMULATOR)" ""
+CWARN += -Waggressive-loop-optimizations
+endif
 
 # Define C++ warning options here
 CPPWARN = -Wall -Wextra
@@ -245,4 +256,11 @@ else
  include $(CHIBIOS)/os/ports/GCC/ARMCMx/rules.mk
 endif
 
+ifneq "$(SIMULATOR)" ""
+ RULESPATH = $(CHIBIOS)/os/ports/GCC/SIMSTM32
+else
+ RULESPATH = $(CHIBIOS)/os/ports/GCC/ARMCMx
+endif
+
+include $(RULESPATH)/rules.mk
 include $(PSAS_RULES)

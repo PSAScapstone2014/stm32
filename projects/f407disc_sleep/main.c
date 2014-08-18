@@ -1,112 +1,87 @@
 #include "ch.h"
 #include "hal.h"
+#include "utils_general.h"
+#include "utils_led.h"
 
 #ifdef SIMULATOR
 # include "simio.h"
 #endif /* SIMULATOR */
 
-void					main(_cmdargs);
+static volatile bool buttonFlag;
 
-static void			appMain(void);
-static void			irqButton(EXTDriver* extp, expchannel_t channel);
-static void			osInit(void);
-static void			driverInit(void);
-static void			osShutdown(void);
-static void			stopMode(void);
+static void irqButton(EXTDriver* extp UNUSED, expchannel_t channel UNUSED) {
+	buttonFlag = true;
+}
 
-static volatile int	buttonFlag;
+static const EXTConfig extConfig =
+{
+	{
+		{ EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOA, irqButton },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL },
+		{ EXT_CH_MODE_DISABLED, NULL }
+	}
+};
 
-static const EXTConfig	extConfig = {
-									{
-										{ EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOA, irqButton },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL },
-										{ EXT_CH_MODE_DISABLED, NULL }
-									}
-								};
 
-static int	leds[] = {
-					GPIOD_LED4,
-					GPIOD_LED3,
-					GPIOD_LED5,
-					GPIOD_LED6
-				};
+static void appMain(void) {
+	unsigned int i, led = 0;
 
-void appMain() {
-	uint32_t	i, led;
+	struct led const * const leds[] = {
+		&LED4,
+		&LED3,
+		&LED5,
+		&LED6
+	};
+	unsigned int numleds = sizeof(leds)/sizeof(leds[0]);
 
 	// flash all LEDs a few times
 	for (i = 0 ; i < 5 ; ++i) {
-		for (led = 0 ; led < sizeof(leds) / sizeof(leds[0]) ; ++led)
-			palWritePad(GPIOD, leds[led], 1 - (i & 1));
-
+		for (led = 0 ; led < numleds ; ++led)
+			ledToggle(leds[led]);
 		chThdSleepMilliseconds(100);
 	}
 
 	// cycle LED blinking until user button pressed
-	buttonFlag = 0;
+	buttonFlag = false;
 	led = 0;
 	while (!buttonFlag) {
-		palTogglePad(GPIOD, leds[led]);
-		if (++led == sizeof(leds) / sizeof(leds[0]))
-			led = 0;
-
+		ledToggle(leds[led++]);
+		led = led % numleds;
 		chThdSleepMilliseconds(250);
 	}
 
 	// turn on all LEDs
-	for (led = 0 ; led < sizeof(leds) / sizeof(leds[0]) ; ++led)
-		palWritePad(GPIOD, leds[led], 1);
+	for (led = 0 ; led < numleds ; ++led)
+		ledOn(leds[led]);
 
 	// turn off LEDs one by one, in reverse order from blink cycle
-	for (led = sizeof(leds) / sizeof(leds[0]) ; led-- ; ) {
-		palWritePad(GPIOD, leds[led], 0);
-
+	for (led = numleds ; led-- ; ) {
+		ledOff(leds[led]);
 		chThdSleepMilliseconds(250);
 	}
 }
 
-void irqButton(EXTDriver* extp, expchannel_t channel) {
-	(void)extp;
-	(void)channel;
-
-	buttonFlag = true;
-}
-
-void main() {
-	while (1) {
-		osInit();
-
-		driverInit();
-
-		appMain();
-
-		osShutdown();
-
-		stopMode();
-	}
-}
-
-void osInit() {
+static void osInit(void) {
 	halInit();
 	chSysInit();
 }
@@ -116,11 +91,11 @@ void driverInit() {
 	extChannelEnable(&EXTD1, 0);
 }
 
-void osShutdown() {
+static void osShutdown(void) {
 	chSysDisable();
 }
 
-void stopMode() {
+static void stopMode(void) {
 #ifndef SIMULATOR
 	// configure for STOP mode on WFI
 	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
@@ -137,4 +112,14 @@ void stopMode() {
 #endif /* SIMULATOR */
 
 	extStop(&EXTD1);
+}
+
+void main(void) {
+	while (TRUE) {
+		osInit();
+		driverInit();
+		appMain();
+		osShutdown();
+		stopMode();
+	}
 }

@@ -23,6 +23,16 @@ ifeq ($(USE_LINK_GC),)
   USE_LINK_GC = yes
 endif
 
+# Linker extra options here.
+ifeq ($(USE_LDOPT),)
+  USE_LDOPT = 
+endif
+
+# Enable this if you want link time optimizations (LTO)
+ifeq ($(USE_LTO),)
+  USE_LTO = no
+endif
+
 # If enabled, this option allows to compile the application in THUMB mode.
 ifeq ($(USE_THUMB),)
   USE_THUMB = yes
@@ -41,15 +51,9 @@ endif
 # Architecture or project specific options
 #
 
-# Enables the use of FPU on Cortex-M4.
-# Enable this if you really want to use the STM FWLib.
+# Enables the use of FPU on Cortex-M4 (no, softfp, hard).
 ifeq ($(USE_FPU),)
   USE_FPU = no
-endif
-
-# Enable this if you really want to use the STM FWLib.
-ifeq ($(USE_FWLIB),)
-  USE_FWLIB = no
 endif
 
 #
@@ -75,10 +79,8 @@ include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F4xx/port.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
 include $(CHIBIOS)/os/various/lwip_bindings/lwip.mk
 
-
 # Define linker script file here
 LDSCRIPT= $(PORTLD)/STM32F407xG.ld
-#LDSCRIPT= $(PORTLD)/STM32F407xG_CCM.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -92,10 +94,9 @@ CSRC = $(PORTSRC) \
        $(CHIBIOS)/os/various/chprintf.c \
        $(CHIBIOS)/os/various/memstreams.c \
        $(CHIBIOS)/os/various/shell.c \
-       $(PSAS_NET)/net_addrs.c \
-       $(PSAS_NET)/utils_sockets.c \
-       ./data_udp/data_udp.c \
-       ./shell_cmd/cmddetail.c \
+       $(PSAS_NETSRC) \
+       $(PSAS_UTIL)/utils_led.c \
+       $(PSAS_UTIL)/utils_shell.c \
        main.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
@@ -125,11 +126,10 @@ TCPPSRC =
 # List ASM source files here
 ASMSRC = $(PORTASM)
 
-INCDIR = $(PORTINC) $(KERNINC) $(TESTINC) \
+INCDIR = $(PORTINC) $(KERNINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) $(LWINC)\
          $(CHIBIOS)/os/various \
-         $(PSAS_DEVICES)/include  $(PSAS_NET) \
-         ./data_udp
+         $(PSAS_DEVICES)/include  $(PSAS_UTIL)/include $(PSAS_NET) \
 
 #
 # Project, sources and paths
@@ -141,7 +141,6 @@ INCDIR = $(PORTINC) $(KERNINC) $(TESTINC) \
 
 MCU  = cortex-m4
 
-#TRGT = arm-elf-
 TRGT = arm-none-eabi-
 CC   = $(TRGT)gcc
 CPPC = $(TRGT)g++
@@ -153,6 +152,7 @@ LD   = $(TRGT)gcc
 CP   = $(TRGT)objcopy
 AS   = $(TRGT)gcc -x assembler-with-cpp
 OD   = $(TRGT)objdump
+SZ   = $(TRGT)size
 HEX  = $(CP) -O ihex
 BIN  = $(CP) -O binary
 
@@ -163,7 +163,11 @@ AOPT =
 TOPT = -mthumb -DTHUMB
 
 # Define C warning options here
-CWARN = -Wall -Wextra -Wstrict-prototypes
+CWARN = -Wall -Wextra -Wstrict-prototypes -Wdisabled-optimization \
+	-Wdouble-promotion -Wformat=2 -Wfloat-equal \
+	-Waggressive-loop-optimizations -Wunsafe-loop-optimizations \
+	-Waggregate-return -Wlogical-op -Wmissing-include-dirs \
+	-Wpointer-arith -Wredundant-decls 
 
 # Define C++ warning options here
 CPPWARN = -Wall -Wextra
@@ -200,15 +204,13 @@ DLIBS =
 #
 
 # List all user C define here, like -D_DEBUG=1
-#UDEFS = -DADIS_DEBUG=1
 UDEFS =
 
 # Define ASM defines here
 UADEFS =
 
 # List all user directories here
-# UINCDIR = ./boards/OLIMEX_STM32_E407
-UINCDIR = ./shell_cmd
+UINCDIR =
 
 # List the user directory to look for the libraries here
 ULIBDIR =
@@ -220,20 +222,6 @@ ULIBS =
 # End of user defines
 ##############################################################################
 
-ifeq ($(USE_FPU),yes)
-  USE_OPT += -mfloat-abi=softfp -mfpu=fpv4-sp-d16 -fsingle-precision-constant
-  DDEFS += -DCORTEX_USE_FPU=TRUE
-else
-  DDEFS += -DCORTEX_USE_FPU=FALSE
-endif
-
-ifeq ($(USE_FWLIB),yes)
-  include $(CHIBIOS)/ext/stm32lib/stm32lib.mk
-  CSRC += $(STM32SRC)
-  INCDIR += $(STM32INC)
-  USE_OPT += -DUSE_STDPERIPH_DRIVER
-endif
-
-include $(CHIBIOS)/os/ports/GCC/ARMCMx/rules.mk
+RULESPATH = $(CHIBIOS)/os/ports/GCC/ARMCMx
+include $(RULESPATH)/rules.mk
 include $(PSAS_RULES)
-
