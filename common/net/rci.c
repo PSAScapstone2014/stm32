@@ -38,7 +38,7 @@ static int get_command(int s, char * buffer, int buflen){
 	FD_SET(s, &readset);
 	do {
 		struct timeval timeout = {5, 0};
-		if(select(s+1, &readset, NULL, NULL, &timeout) <= 0){
+		if(SELECT(s+1, &readset, NULL, NULL, &timeout) <= 0){
 			return -1;
 		}
 		int len = read(s, buffer, buflen-cmdlen);

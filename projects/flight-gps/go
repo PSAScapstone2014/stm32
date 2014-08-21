@@ -3,6 +3,7 @@ from SocketServer import StreamRequestHandler, DatagramRequestHandler, TCPServer
 import subprocess
 import encodings
 import threading
+import random
 import socket
 import time
 import sys
@@ -17,6 +18,19 @@ def sim_decode(line):
   # decode simio data
   data = code.decode('hex')
   return source, data
+
+def gps_rand():
+  utc = int(time.strftime('%H%M%S'))
+  lat = random.randrange(0, 10000) + random.randrange(0, 10000)/10000.0
+  lng = random.randrange(0, 10000) + random.randrange(0, 10000)/10000.0
+  q   = random.randrange(0,10)
+  sat = random.randrange(0,15)
+  prec= random.randrange(0,50)
+  alt = random.randrange(0,5000) + random.randrange(0,10)/10.0
+  sep = random.randrange(0,50) * -1 + random.randrange(0,10)/10.0
+  chk = random.randrange(0,256)
+  return '$GPGGA,%d,%.4f,N,%.4f,W,%d,%d,%.1f,%.1f,M,%.1f,M,,*%02X' % \
+    (utc, lat, lng, q, sat, prec, alt, sep, chk)
 
 class SIMIO(StreamRequestHandler):
   def handle(self):
@@ -35,13 +49,13 @@ class SIMIO(StreamRequestHandler):
   def sd1_writer(self):
     while True:
       # write something to SD1 forever
-      self.wfile.write(sim_format('SD1_IO', 'foo'))
+      self.wfile.write(sim_format('SD1_IO', gps_rand()))
       time.sleep(1)
 
 class COTS(DatagramRequestHandler):
   def handle(self):
     # read and print any incoming data
-    print '[COTS] %r' % self.rfile.read()
+    print '[COTS] RECV %r' % self.rfile.read()
 
 # prevent bind errors on relaunch
 TCPServer.allow_reuse_address = True
